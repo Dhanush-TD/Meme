@@ -1,0 +1,46 @@
+{
+  "entities": {
+    "Coin": {
+      "title": "Coin",
+      "description": "Market data and AI prediction for a specific meme coin",
+      "type": "object",
+      "properties": {
+        "coin": { "type": "string", "description": "Ticker symbol (e.g., DOGE)" },
+        "price": { "type": "number", "description": "Current price in USD" },
+        "change_24h": { "type": "number", "description": "24h percentage change" },
+        "trend": { "type": "string", "enum": ["up", "down", "neutral"] },
+        "prediction": { "type": "string", "enum": ["BUY", "SELL", "HOLD"] },
+        "confidence": { "type": "number", "description": "AI confidence score 0-100" },
+        "sentiment": { "type": "string", "description": "Sentiment label (e.g., Bullish)" },
+        "meme_score": { "type": "number", "description": "Meme velocity score 0-10" },
+        "dominance": { "type": "number", "description": "Market dominance percentage" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["coin", "price", "prediction", "updatedAt"]
+    },
+    "GlobalStats": {
+      "title": "Global Stats",
+      "description": "Aggregate market sentiment and network activity",
+      "type": "object",
+      "properties": {
+        "sentiment_label": { "type": "string" },
+        "sentiment_score": { "type": "number" },
+        "mentions_1h": { "type": "number" },
+        "influencer_buzz": { "type": "string" },
+        "meme_velocity": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["sentiment_score", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/coins/{coinId}": {
+      "schema": "Coin",
+      "description": "Collection of meme coins and their intelligence data"
+    },
+    "/stats/global": {
+      "schema": "GlobalStats",
+      "description": "Single document for aggregate market statistics"
+    }
+  }
+}

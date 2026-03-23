@@ -1,0 +1,90 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: coins
+    // Document ID: {coinId} (e.g., DOGE)
+    // Fields:
+    //   - coin: string (required)
+    //   - price: number (required)
+    //   - change_24h: number
+    //   - trend: string (up|down|neutral)
+    //   - prediction: string (BUY|SELL|HOLD) (required)
+    //   - confidence: number (0-100)
+    //   - sentiment: string
+    //   - meme_score: number (0-10)
+    //   - dominance: number
+    //   - updatedAt: timestamp (required)
+    //
+    // Collection: stats
+    // Document ID: global
+    // Fields:
+    //   - sentiment_label: string
+    //   - sentiment_score: number (required)
+    //   - mentions_1h: number
+    //   - influencer_buzz: string
+    //   - meme_velocity: number
+    //   - updatedAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "dhanushtdpc@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidCoin(data) {
+      return data.coin is string && data.coin.size() > 0 && data.coin.size() < 10 &&
+             data.price is number && data.price >= 0 &&
+             data.prediction in ['BUY', 'SELL', 'HOLD'] &&
+             data.updatedAt is timestamp;
+    }
+
+    function isValidStats(data) {
+      return data.sentiment_score is number && data.sentiment_score >= 0 && data.sentiment_score <= 100 &&
+             data.updatedAt is timestamp;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    // Allow public read for dashboard data (MemeIntel is a public terminal)
+    match /coins/{coinId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidCoin(request.resource.data);
+    }
+
+    match /stats/global {
+      allow read: if true;
+      allow write: if isAdmin() && isValidStats(request.resource.data);
+    }
+
+    // User profiles for admin roles
+    match /users/{userId} {
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow write: if isAdmin();
+    }
+  }
+}
